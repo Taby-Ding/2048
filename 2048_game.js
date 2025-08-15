@@ -32,12 +32,22 @@ function initGame() {
     let touchStartY = 0;
     
     gameBoard.addEventListener('touchstart', (e) => {
+        // 阻止默认触摸行为
+        e.preventDefault();
         touchStartX = e.touches[0].clientX;
         touchStartY = e.touches[0].clientY;
-    }, false);
+    }, { passive: false });
+    
+    gameBoard.addEventListener('touchmove', (e) => {
+        // 阻止默认触摸移动行为
+        e.preventDefault();
+    }, { passive: false });
     
     gameBoard.addEventListener('touchend', (e) => {
         if (gameOver) return;
+        
+        // 阻止默认行为
+        e.preventDefault();
         
         let touchEndX = e.changedTouches[0].clientX;
         let touchEndY = e.changedTouches[0].clientY;
@@ -46,19 +56,22 @@ function initGame() {
         let dx = touchEndX - touchStartX;
         let dy = touchEndY - touchStartY;
         
+        // 设置滑动阈值，确保只有明显的滑动才会触发操作
+        const threshold = 30;
+        
         // 确定滑动方向 (优先处理水平或垂直滑动)
         if (Math.abs(dx) > Math.abs(dy)) {
             // 水平滑动
-            if (dx > 50) {
+            if (dx > threshold) {
                 moveTiles('right');
-            } else if (dx < -50) {
+            } else if (dx < -threshold) {
                 moveTiles('left');
             }
         } else {
             // 垂直滑动
-            if (dy > 50) {
+            if (dy > threshold) {
                 moveTiles('down');
-            } else if (dy < -50) {
+            } else if (dy < -threshold) {
                 moveTiles('up');
             }
         }
@@ -77,7 +90,7 @@ function initGame() {
         
         // 重置移动标志
         moved = false;
-    }, false);
+    }, { passive: false });
 }
 
 // 添加随机方块
