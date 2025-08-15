@@ -2,22 +2,68 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>9x9 2048游戏</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2048游戏</title>
     <link rel="stylesheet" href="2048_game.css">
 </head>
 <body>
-    <div class="game-container">
-        <h1>2048游戏 (9x9)</h1>
-        <div class="score-container">
-            <span id="score">0</span>
+    <!-- 音效元素 -->
+    <!-- 使用sounds文件夹中现有的音效文件 -->
+    <audio id="merge-sound" src="coin.mp3"></audio>
+    <audio id="win-sound" src="victory.mp3"></audio>
+
+    <!-- 游戏模式选择界面 -->
+    <div id="mode-selection" class="mode-selection">
+        <h1>2048游戏</h1>
+        <p>选择游戏模式:</p>
+        <div class="mode-options">
+            <div class="mode-option" data-mode="campaign">
+                <h2>闯关模式</h2>
+                <p>从8x8开始，每合成2048升级难度(减少格子数量)</p>
+                <p>难度1: 8x8 | 难度2: 7x7 | 难度3: 6x6 | 难度4: 5x5 | 难度5: 4x4</p>
+            </div>
+            <div class="mode-option" data-mode="endless">
+                <h2>无尽模式</h2>
+                <p>选择难度开始游戏，直到无法移动</p>
+                <div class="difficulty-selection">
+                    <label for="endless-difficulty-select">选择难度:</label>
+                    <select id="endless-difficulty-select">
+                        <option value="1">难度1 (8x8)</option>
+                        <option value="2">难度2 (7x7)</option>
+                        <option value="3">难度3 (6x6)</option>
+                        <option value="4">难度4 (5x5)</option>
+                        <option value="5">难度5 (4x4)</option>
+                    </select>
+                </div>
+            </div>
         </div>
-        <div id="game-board"></div>
-        <div class="game-message">
-            <p id="message"></p>
+        <button id="start-game-button">开始游戏</button>
+    </div>
+
+    <!-- 游戏界面 -->
+    <div id="game-interface" class="game-interface" style="display: none;">
+        <div class="info-bar">
+            <div class="score-container">
+                <p>分数: <span id="score">0</span></p>
+            </div>
+            <div class="time-container">
+                <p>时间: <span id="time">00:00</span></p>
+            </div>
+            <div class="level-container">
+                <p>关卡: <span id="level">1</span></p>
+            </div>
+        </div>
+
+        <div id="game-board" class="game-board"></div>
+
+        <div id="message"></div>
+
+        <div class="button-group">
             <button id="restart-button">重新开始</button>
+            <button id="back-to-mode-button">返回模式选择</button>
         </div>
     </div>
+
     <script src="2048_game.js"></script>
 </body>
 </html>
