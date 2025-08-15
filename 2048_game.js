@@ -25,6 +25,59 @@ function initGame() {
     // 添加键盘事件监听
     document.addEventListener('keydown', handleKeyPress);
     document.getElementById('restart-button').addEventListener('click', restartGame);
+    
+    // 添加触摸事件监听
+    const gameBoard = document.getElementById('game-board');
+    let touchStartX = 0;
+    let touchStartY = 0;
+    
+    gameBoard.addEventListener('touchstart', (e) => {
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+    }, false);
+    
+    gameBoard.addEventListener('touchend', (e) => {
+        if (gameOver) return;
+        
+        let touchEndX = e.changedTouches[0].clientX;
+        let touchEndY = e.changedTouches[0].clientY;
+        
+        // 计算滑动距离
+        let dx = touchEndX - touchStartX;
+        let dy = touchEndY - touchStartY;
+        
+        // 确定滑动方向 (优先处理水平或垂直滑动)
+        if (Math.abs(dx) > Math.abs(dy)) {
+            // 水平滑动
+            if (dx > 50) {
+                moveTiles('right');
+            } else if (dx < -50) {
+                moveTiles('left');
+            }
+        } else {
+            // 垂直滑动
+            if (dy > 50) {
+                moveTiles('down');
+            } else if (dy < -50) {
+                moveTiles('up');
+            }
+        }
+        
+        // 如果有移动，添加新方块并渲染
+        if (moved) {
+            addRandomTile();
+            renderBoard();
+            document.getElementById('score').textContent = score;
+            
+            if (isGameOver()) {
+                gameOver = true;
+                document.getElementById('message').textContent = '游戏结束!';
+            }
+        }
+        
+        // 重置移动标志
+        moved = false;
+    }, false);
 }
 
 // 添加随机方块
@@ -126,7 +179,7 @@ function handleKeyPress(event) {
 
 // 移动方块
 function moveTiles(direction) {
-    let moved = false;
+    moved = false;
     
     // 根据方向处理移动
     switch (direction) {

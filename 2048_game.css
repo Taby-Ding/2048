@@ -1,29 +1,38 @@
-.game-container {
+body {
     display: flex;
     flex-direction: column;
     align-items: center;
     font-family: Arial, sans-serif;
-    max-width: 600px;
+    max-width: 100%;
     margin: 0 auto;
+    padding: 10px;
+    box-sizing: border-box;
+}
+
+.game-container {
+    width: 100%;
+    max-width: 600px;
 }
 
 #game-board {
     display: grid;
     grid-template-columns: repeat(9, 1fr);
     grid-template-rows: repeat(9, 1fr);
-    gap: 10px;
-    width: 450px;
-    height: 450px;
+    gap: 2vw;
+    width: 100%;
+    height: 100%;
+    aspect-ratio: 1 / 1;
     background-color: #bbada0;
-    padding: 10px;
+    padding: 2vw;
     border-radius: 6px;
+    box-sizing: border-box;
 }
 
 .tile {
     display: flex;
     justify-content: center;
     align-items: center;
-    font-size: 24px;
+    font-size: clamp(12px, 4vw, 24px);
     font-weight: bold;
     border-radius: 3px;
     background-color: #cdc1b4;
@@ -31,7 +40,7 @@
 
 .score-container {
     margin: 20px 0;
-    font-size: 24px;
+    font-size: clamp(18px, 5vw, 24px);
 }
 
 .game-message {
@@ -41,6 +50,17 @@
 
 #restart-button {
     padding: 10px 20px;
-    font-size: 16px;
+    font-size: clamp(14px, 4vw, 16px);
     margin-top: 10px;
+}
+
+@media (max-width: 600px) {
+    body {
+        padding: 5px;
+    }
+
+    #game-board {
+        gap: 1.5vw;
+        padding: 1.5vw;
+    }
 }
