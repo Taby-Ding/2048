@@ -492,8 +492,12 @@
                 }
 
                 changeBGM(filename) {
-                    this.bgm.src = this.bgmPath + filename;
-                    this.bgm.play().catch(e=>{});
+                    console.log("filename received:", filename);
+    				console.log("bgmPath:", this.bgmPath);
+   					 const fullPath = this.bgmPath + filename;
+   					 console.log("Attempting to load BGM from:", fullPath);
+   					 this.bgm.src = fullPath;
+   					 this.bgm.play().catch(e=>{});
                 }
 
                 changeSFX(filename) {
