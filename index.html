@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>2048 玩法实验室</title>
-<meta name="color-scheme" content="light only">
+    <title>2048 玩法实验室 (无尽模式版)</title>
+    <meta name="color-scheme" content="light only">
     <style>
         /* --- 1. 基础视觉风格 --- */
         :root {
@@ -14,7 +14,7 @@
             --cell-empty: #cdc1b4;
             --btn-bg: #8f7a66;
             --btn-text: #f9f6f2;
-	    color-scheme: light;
+            color-scheme: light;
             
             /* 动态变量 */
             --grid-size: 4; 
@@ -135,6 +135,8 @@
             max-width: 500px;
             margin-bottom: 10px;
             align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
         }
         
         .stat-group { display: flex; gap: 10px; }
@@ -148,6 +150,19 @@
         }
         .stat-title { font-size: 12px; text-transform: uppercase; opacity: 0.9; }
         .stat-value { font-size: 20px; font-weight: bold; }
+
+        /* AI 速度控制条 */
+        #ai-controls {
+            background: rgba(255,255,255,0.7);
+            padding: 5px 10px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            border: 1px solid #ccc;
+        }
+        #ai-speed-slider { width: 80px; accent-color: var(--btn-bg); }
 
         /* RPG血条 */
         .hp-container {
@@ -176,6 +191,7 @@
             grid-template-rows: repeat(var(--grid-size, 4), 1fr);
             gap: 8px;
             box-sizing: border-box;
+            position: relative;
         }
 
         .tile {
@@ -202,19 +218,34 @@
         
         /* 颜色表 */
        .val-2 { background: #eee4da; color: #776e65; }
-	.val-4 { background: #ffe082; color: #776e65; }
-        .val-8 { background: #ff9800; color: #fff; }
-        .val-16 { background: #f59563; }
-        .val-32 { background: #f67c5f; }
-        .val-64 { background: #f65e3b; }
-        .val-128 { background: #edcf72; font-size: calc(var(--tile-font-size) * 0.8); }
-        .val-256 { background: #edcc61; font-size: calc(var(--tile-font-size) * 0.8); }
-        .val-512 { background: #edc850; font-size: calc(var(--tile-font-size) * 0.8); }
-        .val-1024 { background: #edc53f; font-size: calc(var(--tile-font-size) * 0.6); }
+       .val-4 { background: #ffe082; color: #776e65; }
+       .val-8 { background: #ff9800; color: #fff; }
+       .val-16 { background: #f59563; }
+       .val-32 { background: #f67c5f; }
+       .val-64 { background: #f65e3b; }
+       .val-128 { background: #edcf72; font-size: calc(var(--tile-font-size) * 0.8); }
+       .val-256 { background: #edcc61; font-size: calc(var(--tile-font-size) * 0.8); }
+       .val-512 { background: #edc850; font-size: calc(var(--tile-font-size) * 0.8); }
+       .val-1024 { background: #edc53f; font-size: calc(var(--tile-font-size) * 0.6); }
 
         /* 特殊方块 */
         .type-enemy { background: var(--enemy-color) !important; border: 2px solid #a93226; box-sizing: border-box; }
         .type-potion { background: var(--potion-color) !important; font-size: calc(var(--tile-font-size) * 1.2); }
+
+        /* AI 指示箭头 */
+        #ai-arrow {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 60px;
+            color: rgba(231, 76, 60, 0.8);
+            z-index: 20;
+            pointer-events: none;
+            display: none;
+            text-shadow: 0 0 10px white;
+            animation: float 1s infinite;
+        }
+        @keyframes float { 0%,100%{ opacity: 0.5; } 50%{ opacity: 1; } }
 
         /* --- 5. 物理射击模式适配 --- */
         #physics-stage {
@@ -265,23 +296,53 @@
         }
         button:active { background: #736252; transform: scale(0.95); }
 
-	/* 新增警戒线样式 */
-	#limit-line {
+        /* 新增警戒线样式 */
+        #limit-line {
+            position: absolute;
+            width: 100%;
+            height: 2px;
+            border-top: 2px dashed #e74c3c; /* 红色虚线 */
+            left: 0;
+            z-index: 5;
+            pointer-events: none; 
+        }
+
+        .shooter-area {
+            background: rgba(0, 0, 0, 0.1); 
+        }
+
+/* --- 新增：锁定模式样式 --- */
+.mode-card.locked {
+    opacity: 0.5;
+    filter: grayscale(100%);
+    cursor: not-allowed;
+    position: relative;
+}
+.mode-card.locked::after {
+    content: "🔒";
     position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 40px;
+    opacity: 0.8;
+}
+
+/* --- 新增：版权信息样式 --- */
+.copyright-footer {
+    margin-top: auto; /* 自动推到容器底部 */
+    padding: 20px 0;
+    font-size: 12px;
+    color: #999;     /* 灰色文字，不刺眼 */
+    text-align: center;
+    line-height: 1.6;
     width: 100%;
-    height: 2px;
-    border-top: 2px dashed #e74c3c; /* 红色虚线 */
-    left: 0;
-    z-index: 5;
-    pointer-events: none; /* 防止挡住点击 */
-    /* top值会在JS里动态计算 */
-	}
-
-	/* 可以在这里给 shooter-area 加一点背景色方便区分（可选） */
-	.shooter-area {
-    background: rgba(0, 0, 0, 0.1); 
-	}
-
+}
+.copyright-footer a {
+    color: #8f7a66;
+    text-decoration: none;
+    border-bottom: 1px dashed #8f7a66;
+}
 
     </style>
 </head>
@@ -300,23 +361,16 @@
     <div class="modal" id="settings-modal">
         <div class="modal-content">
             <h3 style="margin-top:0; text-align: center; color: #776e65;">游戏设置</h3>
-            
             <div class="setting-row">
                 <label>背景音乐 (BGM)</label>
                 <select id="bgm-select" onchange="window.audioManager.changeBGM(this.value)">
                 </select>
             </div>
-            
             <div class="setting-row">
                 <label>音效 (SFX)</label>
                 <select id="sfx-select" onchange="window.audioManager.changeSFX(this.value)">
                 </select>
             </div>
-            
-            <div class="setting-row" style="font-size: 12px; color: #999; line-height: 1.5;">
-                * 提示: 需在根目录创建 bgm/ 和 sfx/ 文件夹放入音频文件。若无文件则无声，但不影响游戏。
-            </div>
-
             <button class="close-btn" onclick="window.ui.toggleSettings()">完成</button>
         </div>
     </div>
@@ -331,32 +385,48 @@
                 <span class="mode-icon">🔢</span>
                 <h3>经典模式</h3>
                 <p>4x4 原汁原味</p>
-            </div>
+            </div>            
             <div class="mode-card" onclick="window.game.start('rpg')">
                 <span class="mode-icon">⚔️</span>
                 <h3>RPG2048</h3>
-                <p>4x4 打怪嗑药</p>
+                <p>4x4 打怪嗑药升级</p>
             </div>
             <div class="mode-card" onclick="window.game.start('gravity')">
                 <span class="mode-icon">🍎</span>
-                <h3>俄罗斯方块2048</h3>
-                <p>4x4 只能下落、左右移动</p>
+                <h3>重力2048</h3>
+                <p>只能下落、左右移动</p>
             </div>
             <div class="mode-card" onclick="window.game.start('ap')">
                 <span class="mode-icon">👣</span>
-                <h3>步步为营2048</h3>
-                <p>4x4 步数有限，三思后行</p>
+                <h3>步步为赢2048</h3>
+                <p>步数有限，三思后行</p>
             </div>
             <div class="mode-card" onclick="window.game.start('city')">
                 <span class="mode-icon">⚡</span>
-                <h3>修仙2048</h3>
-                <p>4x4凡人修仙，逆天改命</p>
+                <h3>凡人修仙2048</h3>
+                <p>凡人修仙，逆天改命</p>
             </div>
             <div class="mode-card" onclick="window.game.start('shoot')">
                 <span class="mode-icon">🏹</span>
                 <h3>泡泡龙2048</h3>
                 <p>射击碰撞玩法</p>
             </div>
+            <!-- 修改：将贪食蛇模式改为无尽模式 -->
+            <div class="mode-card" onclick="window.game.endlessSetup()">
+                <span class="mode-icon">∞</span>
+                <h3>无尽模式</h3>
+                <p>4x4 到 9x9 自选，无止境</p>
+            </div>
+	    <div class="mode-card" id="ai-card">
+                <span class="mode-icon">🤖</span>
+                <h3>AI 演示</h3>
+                <p>看AI如何玩转2048</p>
+            </div>
+	<div class="copyright-footer">
+        © 2026 Taby-Ding. All Rights Reserved. <br>
+	 Based on 2048 by Gabriele Cirulli.<br>
+                <span style="font-size: 10px; opacity: 0.6;">v2.0 AI增强版</span>
+    </div>
         </div>
     </div>
 
@@ -369,10 +439,15 @@
                     <div class="stat-title">得分</div>
                     <div class="stat-value" id="score">0</div>
                 </div>
-                <!-- 特殊状态栏：步数 -->
+                <!-- 特殊状态栏 -->
                 <div class="stat-box" id="moves-box" style="display:none;">
                     <div class="stat-title">步数</div>
                     <div class="stat-value" id="moves">50</div>
+                </div>
+                <!-- AI 控制条 -->
+                <div id="ai-controls" style="display:none;">
+                    <span>AI速度:</span>
+                    <input type="range" id="ai-speed-slider" min="1" max="10" step="1" value="5" title="越右越快">
                 </div>
             </div>
         </div>
@@ -386,6 +461,8 @@
         <!-- 1. 网格游戏区域 (RPG/Classic/City...) -->
         <div id="game-board-container">
             <div id="game-board">
+                <!-- AI指示箭头 -->
+                <div id="ai-arrow">⬆️</div>
                 <!-- 游戏区域 -->
                 <div class="overlay" id="overlay">
                     <h2 id="overlay-msg" style="font-size: 32px; color: #776e65; margin: 10px;">Game Over</h2>
@@ -393,16 +470,15 @@
                     <button onclick="window.game.restartGrid()">再试一次</button>
                     <button onclick="window.game.showMenu()">主菜单</button>
                 </div>
-            </div>
-            <p id="game-tip" style="margin-top: 15px; font-size: 14px; color: #aaa; text-align: center; max-width: 90%;"></p>
+            </div>            
         </div>
+<p id="game-tip" style="margin-top: 15px; font-size: 14px; color: #aaa; text-align: center; max-width: 90%;"></p>
 
         <!-- 2. 物理射击游戏容器 -->
         <div id="physics-stage" style="display:none;">
-	    <div id="limit-line"></div> 
+            <div id="limit-line"></div> 
             <div class="aim-line" id="aim-line"></div>
             <div class="shooter-area"></div>
-            <!-- 方块动态生成 -->
             <div class="overlay" id="phy-overlay">
                 <h2>堆满啦!</h2>
                 <div id="phy-overlay-desc" style="margin-bottom: 20px; color: #999;"></div>
@@ -410,46 +486,77 @@
                 <button onclick="window.game.showMenu()">返回菜单</button>
             </div>
         </div>
+
     </div>
 
     <script>
-        // 等待页面加载完成，防止点击失效
         window.addEventListener('load', function() {
+
+// --- 检查AI模式解锁状态 ---
+    window.checkAIUnlock = function() {
+        const isUnlocked = localStorage.getItem('ai_unlocked') === 'true';
+        const aiCard = document.getElementById('ai-card');
+        if (!aiCard) return;
+        const aiText = aiCard.querySelector('p');
+
+        if (isUnlocked) {
+            aiCard.classList.remove('locked');
+            aiText.innerText = "看AI如何玩转2048";
+            // 解锁后绑定点击事件
+            aiCard.onclick = function() { window.game.start('auto_demo'); };
+        } else {
+            aiCard.classList.add('locked');
+            aiText.innerText = "看AI如何玩转2048，通关任意模式解锁";
+            // 锁定时点击提示
+            aiCard.onclick = function() { alert("🔒 请先通关任意模式 (合成2048) 后解锁此功能！"); };
+        }
+    }
+    window.checkAIUnlock(); // 页面加载时先检查一次
 
             // --- 1. 全局配置 ---
             const AUDIO_CONFIG = {
                 bgmList: [
                     { name: "默认音乐", file: "default.mp3" },                    
- 		    { name: "RPG", file: "Ukulele.mp3" },
-		    { name: "俄罗斯方块", file: "Tetris.mp3" },
-		    { name: "步步为营", file: "step.mp3" },		  
-                    { name: "凡人修仙",   file: "xian.mp3" },
-		    { name: "泡泡龙", file: "Bubbly.mp3" },
-	   	    { name: "无音乐", file: "1.mp3" }
+ 		            { name: "RPG", file: "Ukulele.mp3" },
+		            { name: "俄罗斯方块", file: "Tetris.mp3" },
+		            { name: "步步为赢", file: "step.mp3" },		  
+                   	    { name: "凡人修仙",   file: "xian.mp3" },
+		            { name: "泡泡龙", file: "Bubbly.mp3" },
+  			    { name: "禅意", file: "Zen.mp3" },
+			    { name: "禅意（雨）", file: "Zenrain.mp3" },
+	   	            { name: "无音乐", file: "1.mp3" }
                 ],
                 sfxList: [
-                    { name: "默认音效", file: "coin.mp3" },
-                    { name: "挥剑",   file: "sword.mp3" },
-		    { name: "冰块",   file: "ice.mp3" },
-	 	    { name: "木鱼",   file: "muyu.mp3" },
-                    { name: "激光",   file: "laser.mp3" },
-	     	    { name: "泡泡", file: "pop.mp3" },
-		    { name: "无音效", file: "2.mp3" }
+                  	    { name: "默认音效", file: "coin.mp3" },
+                  	    { name: "挥剑",   file: "sword.mp3" },
+		            { name: "冰块",   file: "ice.mp3" },	 	           
+                 	    { name: "激光",   file: "laser.mp3" },
+	     	            { name: "泡泡", file: "pop.mp3" },
+			    { name: "木鱼",   file: "muyu.mp3" },
+ 			    { name: "磬",   file: "chime.mp3" },
+		            { name: "无音效", file: "2.mp3" }
                 ]
             };
 
             const CONFIG = {
                 classic: { size: 4, tip: "经典玩法，合成2048获胜。" },
+                auto_demo: { size: 4, tip: "🤖 AI 正在自动演示。调节滑杆可改变思考速度。" },
                 rpg:     { size: 4, tip: "💀是怪物，💊回血。英雄数值 >= 怪物才能击杀升级，否则扣血！" },
-                gravity: { size: 4, tip: "重力异常！只能向左、右、下滑动。方块只从顶部生成。" },
-                ap:      { size: 4, tip: "深思熟虑！每走一步消耗1点步数，合成8回复5点步数。" },
-                city:    { size: 4, tip: " 凡人->炼气 ->筑基 ->金丹 ->元婴 -> 化神 ->炼虚 ->合体 ->大乘  ->渡劫 ->真仙。" },
-                shoot:   { size: 0, tip: "拖动瞄准，松手射击！" }
+                gravity: { size: 4, tip: "重力异常！只能向左、右、下滑动。" },
+                ap:      { size: 4, tip: "深思熟虑！每走一步消耗1点步数，合成8以上，每8点回复1点步数。" },
+                city:    { size: 4, tip: " 凡人→炼气→筑基→金丹→元婴→ 化神→炼虚→合体→大乘 →渡劫→真仙" },
+                shoot:   { size: 0, tip: "拖动瞄准，松手射击！" },
+                endless: { size: 0, tip: "无尽挑战！没有终点，直到填满为止。" } // 新增配置
             };
 
             const CITY_NAMES = { 
                2: "凡人", 4: "炼气", 8: "筑基", 16: "金丹", 32: "元婴", 64: "化神", 128: "炼虚", 
-		256: "合体", 512: "大乘", 1024: "渡劫", 2048: "真仙"
+               256: "合体", 512: "大乘", 1024: "渡劫", 2048: "真仙"
+            };
+
+            const COLOR_MAP = {
+                2: "#eee4da", 4: "#ffe082", 8: "#ff9800", 16: "#f59563", 32: "#f67c5f",
+                64: "#f65e3b", 128: "#edcf72", 256: "#edcc61", 512: "#edc850", 1024: "#edc53f", 2048: "#09f"
             };
 
             // --- 2. 音频管理器 ---
@@ -460,22 +567,14 @@
                     this.sfx = new Audio();
                     this.bgmPath = 'bgm/';
                     this.sfxPath = 'sfx/';
-                    
                     this.initUI();
-                    
                     if(AUDIO_CONFIG.bgmList.length > 0) this.changeBGM(AUDIO_CONFIG.bgmList[0].file);
                     if(AUDIO_CONFIG.sfxList.length > 0) this.changeSFX(AUDIO_CONFIG.sfxList[0].file);
-                    
-                    // 尝试播放 (浏览器可能阻止)
-                    document.body.addEventListener('click', () => {
-                        if (this.bgm.paused) this.bgm.play().catch(e=>{});
-                    }, { once: true });
+                    document.body.addEventListener('click', () => { if (this.bgm.paused) this.bgm.play().catch(e=>{}); }, { once: true });
                 }
-
                 initUI() {
                     const bgmSelect = document.getElementById('bgm-select');
                     const sfxSelect = document.getElementById('sfx-select');
-                    
                     if(bgmSelect) {
                         bgmSelect.innerHTML = "";
                         AUDIO_CONFIG.bgmList.forEach(item => {
@@ -484,7 +583,6 @@
                             bgmSelect.appendChild(opt);
                         });
                     }
-
                     if(sfxSelect) {
                         sfxSelect.innerHTML = "";
                         AUDIO_CONFIG.sfxList.forEach(item => {
@@ -494,22 +592,9 @@
                         });
                     }
                 }
-
-                changeBGM(filename) {
-                    this.bgm.src = this.bgmPath + filename;
-                    this.bgm.play().catch(e=>{});
-                }
-
-                changeSFX(filename) {
-                    this.sfx.src = this.sfxPath + filename;
-                }
-
-                playSFX() {
-                    try {
-                        const sound = this.sfx.cloneNode();
-                        sound.play().catch(e=>{});
-                    } catch(e){}
-                }
+                changeBGM(filename) { this.bgm.src = this.bgmPath + filename; this.bgm.play().catch(e=>{}); }
+                changeSFX(filename) { this.sfx.src = this.sfxPath + filename; }
+                playSFX() { try { const sound = this.sfx.cloneNode(); sound.play().catch(e=>{}); } catch(e){} }
             }
             
             // --- 3. UI 控制 ---
@@ -520,7 +605,7 @@
                 }
             };
 
-            // --- 4. 物理射击游戏逻辑 ---
+            // --- 5. 物理射击游戏逻辑 ---
             class PhysicsGame {
                 constructor() {
                     this.stage = document.getElementById('physics-stage');
@@ -532,82 +617,54 @@
                     this.animationId = null;
                     this.score = 0;
                     this.blockSize = 60;
-                    
                     this.stage.addEventListener('pointerdown', e => this.onDragStart(e));
                     this.stage.addEventListener('pointermove', e => this.onDragMove(e));
                     this.stage.addEventListener('pointerup', e => this.onDragEnd(e));
                     this.stage.addEventListener('pointerleave', e => this.onDragEnd(e));
                 }
-
                 start() {
                     this.stage.style.display = 'block';
                     document.getElementById('game-board-container').style.display = 'none';
                     document.getElementById('hp-bar').style.display = 'none';
                     document.getElementById('hp-text').style.display = 'none';
                     document.getElementById('moves-box').style.display = 'none';
+                    document.getElementById('ai-controls').style.display = 'none';
                     document.getElementById('game-tip').innerText = CONFIG['shoot'].tip;
-
                     this.width = this.stage.clientWidth;
                     this.height = this.stage.clientHeight;
-
-// ▼▼▼ 新增/修改代码 ▼▼▼
-    // 1. 设定发射点 Y 坐标 (距离底部 70px)
-    this.spawnY = this.height - 70; 
-    
-    // 2. 设定警戒线 Y 坐标 (在发射点上方 80px 处，即距离底部 150px)
-    // 数值越小，线越靠上
-    this.limitY = this.spawnY - 80; 
-
-    // 3. 将红线画在计算出的位置
-    const limitEl = document.getElementById('limit-line');
-    if(limitEl) limitEl.style.top = this.limitY + "px";
-    // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
-
+                    this.spawnY = this.height - 70; 
+                    this.limitY = this.spawnY - 80; 
+                    const limitEl = document.getElementById('limit-line');
+                    if(limitEl) limitEl.style.top = this.limitY + "px";
                     this.restart();
                 }
-
                 restart() {
                     this.blocks = [];
                     this.score = 0;
                     this.updateScore(0);
                     document.getElementById('phy-overlay').classList.remove('active');
-                    
                     const oldBlocks = document.querySelectorAll('.phy-block');
                     oldBlocks.forEach(b => b.remove());
-
                     if (this.animationId) cancelAnimationFrame(this.animationId);
                     this.spawnBlock();
                     this.loop();
                 }
-                
-                updateScore(val) {
-                    this.score = val;
-                    document.getElementById('score').innerText = this.score;
-                }
-
+                updateScore(val) { this.score = val; document.getElementById('score').innerText = this.score; }
                 spawnBlock() {
                     const val = Math.random() < 0.7 ? 2 : 4;
                     const el = document.createElement('div');
                     el.className = `phy-block val-${val}`;
                     el.innerText = val;
                     this.stage.appendChild(el);
-
-                    this.currentBlock = {
-                        el: el, val: val,
-                        x: this.width / 2 - this.blockSize / 2,
-                        y: this.spawnY, 
-                        vx: 0, vy: 0, state: 'ready'
-                    };
+                    this.currentBlock = { el: el, val: val, x: this.width / 2 - this.blockSize / 2, y: this.spawnY, vx: 0, vy: 0, state: 'ready' };
                     this.updateEl(this.currentBlock);
                 }
-
                 onDragStart(e) {
                     if (!this.currentBlock || this.currentBlock.state !== 'ready') return;
                     this.isAiming = true;
                     this.stage.setPointerCapture(e.pointerId);
                     this.onDragMove(e);
                 }
-
                 onDragMove(e) {
                     if (!this.isAiming || !this.currentBlock) return;
                     const rect = this.stage.getBoundingClientRect();
@@ -615,18 +672,15 @@
                     x = Math.max(0, Math.min(this.width - this.blockSize, x));
                     this.currentBlock.x = x;
                     this.updateEl(this.currentBlock);
-
                     const line = document.getElementById('aim-line');
                     line.style.display = 'block';
                     line.style.left = (x + this.blockSize/2) + 'px';
                     line.style.height = (this.currentBlock.y) + 'px';
                 }
-
                 onDragEnd(e) {
                     if (!this.isAiming) return;
                     this.isAiming = false;
                     document.getElementById('aim-line').style.display = 'none';
-                    
                     if (this.currentBlock) {
                         this.currentBlock.state = 'moving';
                         this.currentBlock.vy = -18;
@@ -636,63 +690,41 @@
                         setTimeout(() => this.spawnBlock(), 600);
                     }
                 }
-
-                loop() {
-                    this.updatePhysics();
-                    this.animationId = requestAnimationFrame(() => this.loop());
-                }
-
+                loop() { this.updatePhysics(); this.animationId = requestAnimationFrame(() => this.loop()); }
                 updatePhysics() {
                     for (let i = 0; i < this.blocks.length; i++) {
                         let b = this.blocks[i];
                         if (b.state === 'ready') continue;
-
                         b.x += b.vx; b.y += b.vy;
                         b.vx *= 0.98; b.vy *= 0.98;
-
                         if (b.x <= 0) { b.x = 0; b.vx *= -0.6; }
                         if (b.x >= this.width - this.blockSize) { b.x = this.width - this.blockSize; b.vx *= -0.6; }
                         if (b.y <= 0) { b.y = 0; b.vy *= -0.6; }
-                        
                         for (let j = i + 1; j < this.blocks.length; j++) {
                             let other = this.blocks[j];
                             if (this.checkCollision(b, other)) {
-                                if (b.val === other.val) {
-                                    this.merge(b, other);
-                                    i--; break;
-                                } else {
-                                    this.resolveCollision(b, other);
-                                }
+                                if (b.val === other.val) { this.merge(b, other); i--; break; } else { this.resolveCollision(b, other); }
                             }
                         }
-                        
                         if (b.state !== 'ready' && Math.abs(b.vy) < 0.2 && Math.abs(b.vx) < 0.2) {
-    if (b.state === 'moving') b.state = 'static'; // 标记为静止
-    
-    // ▼▼▼ 修改后的判定逻辑 ▼▼▼
-    if (b.y+ this.blockSize> this.limitY) { 
-            document.getElementById('phy-overlay').classList.add('active');
-            document.getElementById('phy-overlay-desc').innerText = `堆积过线！最终得分: ${this.score}`;
-            cancelAnimationFrame(this.animationId);
-            return;
-    }
-    // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
-}
-this.updateEl(b);
+                            if (b.state === 'moving') b.state = 'static'; 
+                            if (b.y+ this.blockSize> this.limitY) { 
+                                document.getElementById('phy-overlay').classList.add('active');
+                                document.getElementById('phy-overlay-desc').innerText = `堆积过线！最终得分: ${this.score}`;
+                                cancelAnimationFrame(this.animationId);
+                                return;
+                            }
+                        }
+                        this.updateEl(b);
                     }
                 }
-                
-                checkCollision(a, b) {
-                    return (a.x < b.x + this.blockSize && a.x + this.blockSize > b.x && a.y < b.y + this.blockSize && a.y + this.blockSize > b.y);
-                }
-
+                checkCollision(a, b) { return (a.x < b.x + this.blockSize && a.x + this.blockSize > b.x && a.y < b.y + this.blockSize && a.y + this.blockSize > b.y); }
                 resolveCollision(b1, b2) {
                     let cx1 = b1.x + this.blockSize/2, cy1 = b1.y + this.blockSize/2;
                     let cx2 = b2.x + this.blockSize/2, cy2 = b2.y + this.blockSize/2;
                     let dx = cx1 - cx2, dy = cy1 - cy2;
                     let dist = Math.sqrt(dx*dx + dy*dy);
                     if (dist === 0) { dx = 0.1; dist = 0.1; }
-                    
                     let overlap = this.blockSize - dist;
                     if (overlap > 0) {
                         let nx = dx / dist, ny = dy / dist;
@@ -702,29 +734,22 @@ this.updateEl(b);
                         b2.vx -= nx * 2; b2.vy -= ny * 2;
                     }
                 }
-
                 merge(target, source) {
                     target.val *= 2;
                     target.el.innerText = target.val;
                     target.el.className = `phy-block val-${target.val > 2048 ? 2048 : target.val}`;
                     target.el.style.transform = `scale(1.3)`;
                     setTimeout(() => target.el.style.transform = `scale(1)`, 150);
-                    
                     source.el.remove();
                     this.blocks = this.blocks.filter(x => x !== source);
-                    
                     this.updateScore(this.score + target.val);
                     if(window.audioManager) window.audioManager.playSFX();
                     target.vy = -5;
                 }
-
-                updateEl(b) {
-                    b.el.style.left = b.x + 'px';
-                    b.el.style.top = b.y + 'px';
-                }
+                updateEl(b) { b.el.style.left = b.x + 'px'; b.el.style.top = b.y + 'px'; }
             }
 
-            // --- 5. Grid游戏逻辑 ---
+            // --- 6. Grid游戏逻辑 (含AI扩展 + 无尽模式修改) ---
             class GridGame {
                 constructor() {
                     this.grid = []; 
@@ -735,11 +760,14 @@ this.updateEl(b);
                     this.hp = 100;
                     this.maxHp = 100;
                     this.moves = 0;
+                    this.aiTimer = null;
                 }
 
-                start(mode) {
+                start(mode, customSize = null) {
                     this.mode = mode;
-                    this.size = CONFIG[mode].size;
+                    // 如果传入了自定义大小，则使用自定义大小，否则使用默认配置
+                    this.size = customSize || CONFIG[mode].size;
+                    
                     document.getElementById('game-tip').innerText = CONFIG[mode].tip;
                     
                     document.getElementById('game-board-container').style.display = 'block';
@@ -748,9 +776,13 @@ this.updateEl(b);
                     const board = document.getElementById('game-board');
                     board.style.setProperty('--grid-size', this.size);
                     
+                    // 动态调整字体大小适配不同网格
                     let fontSize = '35px';
                     if(this.size === 5) fontSize = '28px';
                     if(this.size === 6) fontSize = '22px';
+                    if(this.size === 7) fontSize = '18px';
+                    if(this.size === 8) fontSize = '16px';
+                    if(this.size === 9) fontSize = '14px';
                     board.style.setProperty('--tile-font-size', fontSize);
                     
                     this.hp = 100; this.moves = 50; this.score = 0;
@@ -758,8 +790,15 @@ this.updateEl(b);
                     document.getElementById('hp-bar').style.display = (mode === 'rpg') ? 'block' : 'none';
                     document.getElementById('hp-text').style.display = (mode === 'rpg') ? 'block' : 'none';
                     document.getElementById('moves-box').style.display = (mode === 'ap') ? 'block' : 'none';
+                    document.getElementById('ai-controls').style.display = (mode === 'auto_demo') ? 'flex' : 'none';
+                    document.getElementById('ai-arrow').style.display = 'none';
 
+                    if(this.aiTimer) clearTimeout(this.aiTimer);
                     this.restart();
+
+                    if(mode === 'auto_demo') {
+                        this.aiLoop();
+                    }
                 }
 
                 restart() {
@@ -774,6 +813,214 @@ this.updateEl(b);
                     this.spawnTile();
                     this.spawnTile();
                     this.render();
+                }
+
+                // AI 循环
+                aiLoop() {
+                    if(this.isOver || this.mode !== 'auto_demo') return;
+                    
+                    const speedVal = parseInt(document.getElementById('ai-speed-slider').value);
+                    const delay = 1100 - (speedVal * 100);
+
+                    const bestMove = this.getBestMove();
+                    
+                    if(bestMove !== -1) {
+                        const arrow = document.getElementById('ai-arrow');
+                        arrow.style.display = 'block';
+                        const arrows = ['⬅️', '⬆️', '➡️', '⬇️']; // 0,1,2,3
+                        arrow.innerText = arrows[bestMove];
+                        
+                        setTimeout(() => {
+                            if(this.mode === 'auto_demo') {
+                                this.move(bestMove);
+                                arrow.style.display = 'none';
+                                this.aiTimer = setTimeout(() => this.aiLoop(), delay);
+                            }
+                        }, delay / 2); 
+                    }
+                }
+
+               // --- 大师级 AI 核心算法 (Exponential Expectimax) ---
+
+                // 1. 获取最佳移动方向 (入口)
+                getBestMove() {
+                    let simpleGrid = this.grid.map(c => c ? c.val : 0);
+                    
+                    // 动态深度控制：
+                    // 空位越少，局面越危险，思考必须越深。
+                    // 电脑端 JS 可以跑 Depth 4-5，手机端 Depth 3-4 是极限。
+                    let empties = simpleGrid.filter(x => x === 0).length;
+                    
+                    // 策略：平时3层，危机时刻(空位<4)加深到4层
+                    let depth = empties < 4 ? 4 : 3; 
+
+                    let bestScore = -Infinity;
+                    let bestMove = -1;
+
+                    for (let direction = 0; direction < 4; direction++) {
+                        let result = this.aiSimulateMove(simpleGrid, direction);
+                        if (result.moved) {
+                            // 第一次递归：进入 Chance 节点 (系统生成方块)
+                            let score = this.expectimax(result.grid, depth, false);
+                            if (score > bestScore) {
+                                bestScore = score;
+                                bestMove = direction;
+                            }
+                        }
+                    }
+                    return bestMove;
+                }
+
+                // 2. Expectimax 递归搜索
+                // isPlayer = true (AI回合, 取最大值); false (系统回合, 取平均值)
+                expectimax(grid, depth, isPlayer) {
+                    if (depth === 0) return this.evaluateGridWeighted(grid);
+
+                    if (isPlayer) {
+                        // Max Node (AI)
+                        let maxScore = -Infinity;
+                        let anyMove = false;
+                        for (let direction = 0; direction < 4; direction++) {
+                            let res = this.aiSimulateMove(grid, direction);
+                            if (res.moved) {
+                                anyMove = true;
+                                let score = this.expectimax(res.grid, depth - 1, false);
+                                if (score > maxScore) maxScore = score;
+                            }
+                        }
+                        // 如果无路可走，给予极大的惩罚，防止 AI 走进死胡同
+                        return anyMove ? maxScore : -1e9; 
+                    } else {
+                        // Chance Node (System)
+                        let emptyIndices = [];
+                        for(let i=0; i<16; i++) if(grid[i] === 0) emptyIndices.push(i);
+
+                        if(emptyIndices.length === 0) return this.expectimax(grid, depth - 1, true);
+
+                        // 性能优化：只计算可能性最大的空位，防止浏览器卡死
+                        // 在空位很多时，随机取 3-4 个样本即可代表大局
+                        let candidates = emptyIndices;
+                        if (candidates.length > 3) {
+                            // 简单的随机采样优化性能
+                            candidates = candidates.sort(() => 0.5 - Math.random()).slice(0, 3);
+                        }
+
+                        let totalScore = 0;
+                        for (let idx of candidates) {
+                            // 情况 A: 生成 2 (90% 概率)
+                            let grid2 = [...grid]; grid2[idx] = 2;
+                            let score2 = this.expectimax(grid2, depth - 1, true);
+                            totalScore += score2 * 0.9;
+
+                            // 情况 B: 生成 4 (10% 概率) 
+                            // *重要*: AI 必须意识到生成 4 可能会卡死自己
+                            let grid4 = [...grid]; grid4[idx] = 4;
+                            let score4 = this.expectimax(grid4, depth - 1, true);
+                            totalScore += score4 * 0.1;
+                        }
+                        return totalScore / candidates.length;
+                    }
+                }
+
+                // 3. 评估函数 (指数级蛇形权重)
+                evaluateGridWeighted(grid) {
+                    // 指数权重矩阵：强迫最大的数呆在左下角(15)，然后呈蛇形向上盘旋
+                    // 使用指数 (4的次方) 确保 1024 的权重远大于 512+256+... 的总和
+                    // 这样 AI 绝不会为了贪吃一个小兵而牺牲大将的位置
+                    const weights = [
+                         2,    5,   15,   30,  // Row 0 (顶层)
+                        250, 180,  120,   60,  // Row 1
+                        400, 700, 1200, 1800,  // Row 2
+                       25000, 12000, 6000, 3000   // Row 3 (底层，左下角最大)
+                    ];
+
+                    let score = 0;
+                    let maxVal = 0;
+                    let maxIdx = -1;
+
+                    for (let i = 0; i < 16; i++) {
+                        let val = grid[i];
+                        if (val > 0) {
+                            // 核心公式：数值 * 权重
+                            score += val * weights[i];
+                            if (val > maxVal) {
+                                maxVal = val;
+                                maxIdx = i;
+                            }
+                        }
+                    }
+
+                    // 惩罚机制 1: 最大的数必须在左下角 (Index 12)
+                    // 如果不在，给予惩罚，迫使 AI 把它移回去
+                    if (maxIdx !== 12) {
+                        score -= maxVal * 5000; 
+                    }
+
+                    // 惩罚机制 2: 平滑性 (相邻格子数值差越小越好)
+                    // 这能防止出现 [1024, 2, 512, 4] 这种无法合并的锯齿形状
+                    let smoothnessPenalty = 0;
+                    for (let r = 0; r < 4; r++) {
+                        for (let c = 0; c < 4; c++) {
+                            let idx = r * 4 + c;
+                            if (grid[idx] === 0) continue;
+                            
+                            // 向右比对
+                            if (c < 3) {
+                                let rightIdx = idx + 1;
+                                if (grid[rightIdx] !== 0) {
+                                    smoothnessPenalty += Math.abs(grid[idx] - grid[rightIdx]);
+                                }
+                            }
+                            // 向下比对
+                            if (r < 3) {
+                                let downIdx = idx + 4;
+                                if (grid[downIdx] !== 0) {
+                                    smoothnessPenalty += Math.abs(grid[idx] - grid[downIdx]);
+                                }
+                            }
+                        }
+                    }
+                    
+                    return score - smoothnessPenalty;
+                }
+
+                // 4. 模拟移动 (位运算优化版逻辑)
+                aiSimulateMove(grid, dir) {
+                    let newGrid = [...grid];
+                    let moved = false;
+                    let size = 4; // AI 仅优化 4x4
+                    const getIdx = (r, c) => r * size + c;
+
+                    for (let i = 0; i < size; i++) {
+                        let line = [];
+                        for (let j = 0; j < size; j++) {
+                            let idx = (dir === 0) ? getIdx(i, j) :
+                                      (dir === 2) ? getIdx(i, size - 1 - j) :
+                                      (dir === 1) ? getIdx(j, i) :
+                                      getIdx(size - 1 - j, i);
+                            line.push(newGrid[idx]);
+                        }
+
+                        let filtered = line.filter(x => x !== 0);
+                        for (let k = 0; k < filtered.length - 1; k++) {
+                            if (filtered[k] === filtered[k + 1]) {
+                                filtered[k] *= 2;
+                                filtered.splice(k + 1, 1);
+                                moved = true;
+                            }
+                        }
+                        while (filtered.length < size) filtered.push(0);
+
+                        for (let j = 0; j < size; j++) {
+                            let targetIdx = (dir === 0) ? getIdx(i, j) :
+                                            (dir === 2) ? getIdx(i, size - 1 - j) :
+                                            (dir === 1) ? getIdx(j, i) :
+                                            getIdx(size - 1 - j, i);
+                            if (newGrid[targetIdx] !== filtered[j]) moved = true;
+                            newGrid[targetIdx] = filtered[j];
+                        }
+                    }
+                    return { moved, grid: newGrid };
                 }
 
                 spawnTile(forceType = null) {
@@ -826,14 +1073,14 @@ this.updateEl(b);
                                     processed.push({ val: res.val, type: res.type || 'normal' });
                                     scoreGain += res.score;
                                     buffer = null;
-                                    if(window.audioManager) window.audioManager.playSFX();
+                                    if(window.audioManager && this.mode !== 'auto_demo') window.audioManager.playSFX();
                                 } else if (res.action === 'block') {
                                     processed.push(buffer);
                                     buffer = curr;
                                 } else if (res.action === 'destroy') {
                                     if (res.val !== null) processed.push({ val: res.val, type: 'normal' });
                                     buffer = null;
-                                    if(window.audioManager) window.audioManager.playSFX();
+                                    if(window.audioManager && this.mode !== 'auto_demo') window.audioManager.playSFX();
                                 }
                             }
                         }
@@ -861,38 +1108,40 @@ this.updateEl(b);
                     if (moved) {
                         this.score += scoreGain;
 
-                        // 1. AP check
                         if (this.mode === 'ap') {
                             this.moves--;
                             if (scoreGain > 0) this.moves += Math.floor(scoreGain /8); 
-                            if (this.moves <= 0) { this.endGame("行动力耗尽！挑战失败！"); return; }
+                            if (this.moves <= 0) { this.endGame("步数耗尽！挑战失败！"); return; }
                         }
 
-                        // 2. Win check
                         let maxVal = 0;
                         this.grid.forEach(cell => { if (cell && cell.val > maxVal) maxVal = cell.val; });
                         let target = 2048;
-                        if (maxVal >= target) {
-                            let winMsg = "恭喜！达成 2048！";
-                            switch (this.mode) {
-                                case 'city': winMsg = "恭喜道友证无上道果，修成真仙！"; break;
-                                case 'rpg': winMsg = "传说魔王已被击败！世界和平！"; break;
-                                case 'ap': winMsg = "在步数耗尽前达成目标！策略大师！"; break;
-                                case 'gravity': winMsg = "征服了重力！挑战成功！"; break;
-                                default: winMsg = "恭喜！你合成了 2048！"; break;
+                        if (maxVal >= target && !this.isOver) {
+                            // 无尽模式和AI演示模式不结束游戏
+                            if(this.mode === 'auto_demo' || this.mode === 'endless') {
+                                // 继续游戏
+                            } else {
+                                let winMsg = "恭喜！达成 2048！";
+                                if(this.mode === 'city') winMsg = "恭喜道友证无上道果，修成真仙！";
+				if(this.mode === 'rpg') winMsg = "传说魔王已被击败！世界和平！"
+
+                    		    localStorage.setItem('ai_unlocked', 'true'); // 记录解锁状态
+
+                                this.endGame(winMsg);
+                                return;
                             }
-                            this.endGame(winMsg);
-                            return;
                         }
 
-                        // 3. Continue
                         this.spawnTile();
                         this.render();
 
-                        // 4. Deadlock check
                         if (this.isGridFull() && !this.canMove()) {
-                            if (this.mode === 'rpg') this.endGame("被怪物包围了！无法移动！");
-                            else this.endGame("无法移动了！游戏结束！");
+                            if(this.mode === 'auto_demo') {
+                                setTimeout(() => this.restart(), 2000); 
+                            } else {
+                                this.endGame("无法移动了！游戏结束！");
+                            }
                         }
                     }
                 }
@@ -927,31 +1176,17 @@ this.updateEl(b);
                     this.updateUI();
                 }
 
-                heal(amount) {
-                    this.hp = Math.min(this.maxHp, this.hp + amount);
-                    this.updateUI();
-                }
-
+                heal(amount) { this.hp = Math.min(this.maxHp, this.hp + amount); this.updateUI(); }
                 isGridFull() { return !this.grid.includes(null); }
                 
                 canMove() {
-                    // 1. 空位
                     if (this.isGridFull() === false) return true;
-                    // 2. 检查四周是否有相同数字
                     for (let i = 0; i < this.size; i++) {
                         for (let j = 0; j < this.size; j++) {
                             let idx = i * this.size + j;
-                            let val = this.grid[idx].val; // 注意这里grid存的是对象
-                            // Right
-                            if (j < this.size - 1) {
-                                let right = this.grid[idx + 1].val;
-                                if (val === right) return true;
-                            }
-                            // Down
-                            if (i < this.size - 1) {
-                                let bottom = this.grid[idx + this.size].val;
-                                if (val === bottom) return true;
-                            }
+                            let val = this.grid[idx].val;
+                            if (j < this.size - 1) { if (val === this.grid[idx + 1].val) return true; }
+                            if (i < this.size - 1) { if (val === this.grid[idx + this.size].val) return true; }
                         }
                     }
                     return false;
@@ -959,6 +1194,7 @@ this.updateEl(b);
 
                 endGame(msg) {
                     this.isOver = true;
+                    if(this.aiTimer) clearTimeout(this.aiTimer);
                     document.getElementById('overlay-msg').innerText = msg;
                     document.getElementById('overlay-desc').innerText = `最终得分: ${this.score}`;
                     document.getElementById('overlay').classList.add('active');
@@ -977,8 +1213,10 @@ this.updateEl(b);
                 render() {
                     const board = document.getElementById('game-board');
                     const overlay = document.getElementById('overlay');
+                    const arrow = document.getElementById('ai-arrow');
                     board.innerHTML = '';
                     board.appendChild(overlay);
+                    board.appendChild(arrow); 
 
                     this.grid.forEach(cell => {
                         const tile = document.createElement('div');
@@ -1005,61 +1243,86 @@ this.updateEl(b);
                 }
             }
 
-            // --- 6. 全局初始化 ---
+            // --- 7. 全局初始化 ---
             window.audioManager = new AudioManager();
-            const gridGame = new GridGame();
-            const physicsGame = new PhysicsGame();
+            window.gridGame = new GridGame();
+            window.physicsGame = new PhysicsGame();
+            // window.snakeGame = new SnakeGame(); // 已移除
 
             window.game = {
                 start: (mode) => {
                     document.getElementById('start-screen').classList.add('hidden');
                     document.getElementById('game-screen').classList.remove('hidden');
-                    if (mode === 'shoot') physicsGame.start();
-                    else gridGame.start(mode);
+                    if (mode === 'shoot') window.physicsGame.start();
+                    else window.gridGame.start(mode);
+                },
+                endlessSetup: () => {
+                     let size = prompt("请输入网格大小 (4-9)", "4");
+                     if(size === null) return;
+                     size = parseInt(size);
+                     if(isNaN(size) || size < 4) size = 4;
+                     if(size > 9) size = 9;
+                     
+                     document.getElementById('start-screen').classList.add('hidden');
+                     document.getElementById('game-screen').classList.remove('hidden');
+                     window.gridGame.start('endless', size);
                 },
                 showMenu: () => {
                     document.getElementById('start-screen').classList.remove('hidden');
                     document.getElementById('game-screen').classList.add('hidden');
-                    if (physicsGame.animationId) cancelAnimationFrame(physicsGame.animationId);
+                    if (window.physicsGame.animationId) cancelAnimationFrame(window.physicsGame.animationId);
+                    if (window.gridGame.aiTimer) clearTimeout(window.gridGame.aiTimer);
+			window.checkAIUnlock(); 
                 },
-                restartGrid: () => gridGame.restart(),
-                restartPhysics: () => physicsGame.restart()
+                restartGrid: () => window.gridGame.restart(),
+                restartPhysics: () => window.physicsGame.restart()
             };
 
             // 键盘事件
             document.addEventListener('keydown', e => {
-                if (document.getElementById('physics-stage').style.display === 'block') return;
                 if (document.getElementById('game-screen').classList.contains('hidden')) return;
+                if (document.getElementById('physics-stage').style.display === 'block') return;
 
-                if (e.key === 'ArrowLeft') gridGame.move(0);
-                else if (e.key === 'ArrowUp') gridGame.move(1);
-                else if (e.key === 'ArrowRight') gridGame.move(2);
-                else if (e.key === 'ArrowDown') gridGame.move(3);
+                if (window.gridGame.mode === 'auto_demo') return;
+
+                if (e.key === 'ArrowLeft') window.gridGame.move(0);
+                else if (e.key === 'ArrowUp') window.gridGame.move(1);
+                else if (e.key === 'ArrowRight') window.gridGame.move(2);
+                else if (e.key === 'ArrowDown') window.gridGame.move(3);
             });
 
             // 触摸事件
             let tx = 0, ty = 0;
-            const boardEl = document.getElementById('game-board');
-           boardEl.addEventListener('touchstart', e => { 
-    // 新增：如果点击的是按钮，或者是覆盖层里的元素，直接返回，允许触发点击
-    if (e.target.tagName === 'BUTTON' || e.target.closest('button')) {
-        return; 
-    }
+            const touchArea = document.getElementById('game-screen');
+            touchArea.addEventListener('touchstart', e => { 
+                if (e.target.tagName === 'BUTTON' || e.target.closest('button') || e.target.tagName === 'INPUT') return;
+                tx = e.touches[0].clientX; 
+                ty = e.touches[0].clientY; 
+                if(document.getElementById('physics-stage').style.display !== 'block' && e.cancelable) e.preventDefault(); 
+            }, {passive: false});
 
-    tx = e.touches[0].clientX; 
-    ty = e.touches[0].clientY; 
-    
-    // 只有在非按钮区域才阻止默认滚动
-    if(e.cancelable) e.preventDefault(); 
-}, {passive: false});
-            boardEl.addEventListener('touchmove', e => { e.preventDefault(); }, {passive: false});
-            boardEl.addEventListener('touchend', e => {
+            touchArea.addEventListener('touchmove', e => { 
+               if(document.getElementById('physics-stage').style.display !== 'block') e.preventDefault(); 
+            }, {passive: false});
+
+            touchArea.addEventListener('touchend', e => {
+                if(document.getElementById('physics-stage').style.display === 'block') return;
+                if(e.target.tagName === 'INPUT') return; 
+
                 let dx = e.changedTouches[0].clientX - tx;
                 let dy = e.changedTouches[0].clientY - ty;
+                
+                let moveDir = -1;
                 if (Math.abs(dx) > Math.abs(dy)) {
-                    if (Math.abs(dx) > 30) gridGame.move(dx > 0 ? 2 : 0);
+                    if (Math.abs(dx) > 30) moveDir = dx > 0 ? 2 : 0;
                 } else {
-                    if (Math.abs(dy) > 30) gridGame.move(dy > 0 ? 3 : 1);
+                    if (Math.abs(dy) > 30) moveDir = dy > 0 ? 3 : 1;
+                }
+
+                if(moveDir !== -1) {
+                     if (window.gridGame.mode !== 'auto_demo') {
+                         window.gridGame.move(moveDir);
+                     }
                 }
             });
         });
